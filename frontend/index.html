@@ -2,27 +2,57 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cadastro de produtos</title>
+    <title>Sistema de Produtos</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    
-    <h1>Cadastro de Produtos</h1>
 
-    <form id="formProduto">
-        <input type="text" id="nome" placeholder="Nome do Produto" required>
-        <input type="number" id="valor_unitario" placeholder="Valor Unitário" required>
-        <input type="number" id="quantidade" placeholder="Quantidade" required>
-        <button type="submit"> Salvar</button>
+<div class="container">
 
+    <h1>Sistema de Produtos</h1>
 
-    </form>
+    <div id= "menu" class="menu">
+        <button onclick="mostrarCadastro()">Cadastrar Produto</button>
+        <button onclick="mostrarLista()">Listar Produtos</button>
+    </div>
 
-    <h2>Lista de Produtos</h2>
-    <ul id="listaProdutos"></ul>
+    <!-- Cadastro -->
+    <div id="cadastro" class="card hidden">
+        <h2>Novo Produto</h2>
+        <form id="formProduto" class="form">
+            <input type="text" id="nome" placeholder="Nome do Produto" required>
+            <input type="number" id="valor_unitario" placeholder="Valor Unitário" required>
+            <input type="number" id="quantidade" placeholder="Quantidade" required>
+            <button type="submit" class="btn-primary">Salvar</button>
+        </form>
+        <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
+    </div>
 
-    <script src="script.js"></script>
+    <!-- Lista -->
+    <div id="listaTela" class="card hidden">
+        <h2>Produtos Cadastrados</h2>
+        <div id="listaProdutos" class="tabela"></div>
+        <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
+    </div>
 
+</div>
+
+<!-- MODAL -->
+<div id="modal" class="modal hidden">
+    <div class="modal-content">
+        <h3>Editar Produto</h3>
+        
+        <input type="text" id="editNome">
+        <input type="number" id="editValor">
+        <input type="number" id="editQuantidade">
+
+        <div style="margin-top:15px; text-align:right;">
+            <button onclick="salvarEdicao()" class="btn-primary">Salvar</button>
+            <button onclick="fecharModal()" class="btn-secondary">Cancelar</button>
+        </div>
+    </div>
+</div>
+
+<script src="script.js" defer></script>
 </body>
 </html>

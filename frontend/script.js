@@ -1,43 +1,35 @@
-document.addEventListener("DOMContentLoaded", () =>{
+document.addEventListener("DOMContentLoaded", () => {
 
 const API_URL = "http://localhost:3333/produtos"
 
-const form = document.getElementById("formProduto")
+let produtoEditandoId = null
+
+const home = document.getElementById("menu")
+const cadastro = document.getElementById("cadastro")
+const listaTela = document.getElementById("listaTela")
 const lista = document.getElementById("listaProdutos")
+const modal = document.getElementById("modal")
 
-//Listar produtos
-async function carregarProdutos() {
-    const response = await fetch(API_URL)
-    const produtos = await response.json()
-    
-    lista.innerHTML = ""
-
-    produtos.forEach(produto => {
-        const li = document.createElement("li")
-
-        li.innerHTML = `
-            ${produto.nome} |
-            Unitário: R$ ${produto.valor_unitario} |
-            Qtde: ${produto.quantidade} |
-            Total: R$ ${produto.valor_total}
-
-            <div>
-                 <button onclick="editarProduto(${produto.id}, '${produto.nome}', ${produto.valor_unitario}, ${produto.quantidade})">
-                    Editar
-                </button>
-
-            <div>
-                <button onclick="deletarProduto(${produto.id})">Excluir</button>
-            </div>
-        `
-
-        lista.appendChild(li)
-    })
+// Navegação
+function mostrarCadastro() {
+    home.classList.add("hidden")
+    cadastro.classList.remove("hidden")
 }
 
+function mostrarLista() {
+    home.classList.add("hidden")
+    listaTela.classList.remove("hidden")
+    carregarProdutos()
+}
+
+function voltarHome() {
+    cadastro.classList.add("hidden")
+    listaTela.classList.add("hidden")
+    home.classList.remove("hidden")
+}
 
 // Criar produto
-form.addEventListener("submit", async (e) => {
+document.getElementById("formProduto").addEventListener("submit", async (e) => {
     e.preventDefault()
 
     const nome = document.getElementById("nome").value
@@ -46,56 +38,90 @@ form.addEventListener("submit", async (e) => {
 
     await fetch(API_URL, {
         method: "POST",
-        headers: {
-            "Content-Type": "application/json"
-         },
-         body: JSON.stringify({ nome, valor_unitario, quantidade})
-     })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, valor_unitario, quantidade })
+    })
 
-     form.reset()
-     carregarProdutos()
+    e.target.reset()
+    alert("Produto cadastrado com sucesso!")
 })
 
-// Deletar produto
-async function deletarProduto(id) {
-    await fetch (`${API_URL}/${id}`, {
-        method: "DELETE"
-    })
+// Listar produtos
+async function carregarProdutos() {
+    const response = await fetch(API_URL)
+    const produtos = await response.json()
 
-        carregarProdutos()
+    lista.innerHTML = ""
+
+    lista.innerHTML = ""
+
+produtos.forEach(produto => {
+    const div = document.createElement("div")
+    div.classList.add("linha-produto")
+
+    div.innerHTML = `
+        <div>
+            <strong>${produto.nome}</strong><br>
+            Unitário: R$ ${Number(produto.valor_unitario).toLocaleString("pt-BR", {minimumFractionDigits: 2})}<br>
+            Qtde: ${produto.quantidade}<br>
+            Total: R$ ${Number(produto.valor_total).toLocaleString("pt-BR", {minimumFractionDigits: 2})}
+        </div>
+        <div>
+            <button onclick="abrirModal(${produto.id}, '${produto.nome}', ${produto.valor_unitario}, ${produto.quantidade})" class="btn-primary">
+                Editar
+            </button>
+            <button onclick="deletarProduto(${produto.id})" style="background:#dc2626; color:white;">
+                Excluir
+            </button>
+        </div>
+    `
+
+    lista.appendChild(div)
+    })
 }
 
+// Modal
+function abrirModal(id, nome, valor, quantidade) {
+    produtoEditandoId = id
 
-async function editarProduto(id, nomeAtual, valorAtual, quantidadeAtual) {
+    document.getElementById("editNome").value = nome
+    document.getElementById("editValor").value = valor
+    document.getElementById("editQuantidade").value = quantidade
 
-    const nome = prompt("Novo nome:", nomeAtual)
-    const valor_unitario = prompt("Novo valor unitário:", valorAtual)
-    const quantidade = prompt("Nova quantidade:", quantidadeAtual)
+    modal.classList.remove("hidden")
 
-    if (!nome || !valor_unitario || !quantidade) {
-        alert("Todos os campos são obrigatórios")
-        return
-    }
+}
 
-    await fetch(`${API_URL}/${id}`, {
+function fecharModal(){
+    modal.classList.add("hidden")
+}
+
+async function salvarEdicao() {
+    const nome = document.getElementById("editNome").value
+    const valor_unitario = document.getElementById("editValor").value
+    const quantidade = document.getElementById("editQuantidade").value
+
+    await fetch(`${API_URL}/${produtoEditandoId}`, {
         method: "PUT",
-        headers: {
-            "Content-Type": "application/json"
-        },
-        body: JSON.stringify({
-            nome,
-            valor_unitario,
-            quantidade
-        })
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, valor_unitario, quantidade })
     })
 
+    fecharModal()
     carregarProdutos()
 }
 
-window.editarProduto = editarProduto
+// Deletar
+async function deletarProduto(id) {
+    if (!confirm("Tem certeza que deseja excluir?")) return
+    await fetch(`${API_URL}/${id}`, { method: "DELETE" })
+    carregarProdutos()
+}
 window.deletarProduto = deletarProduto
-
-// Carregar ao iniciar
-carregarProdutos()
-
+window.abrirModal = abrirModal
+window.salvarEdicao = salvarEdicao
+window.fecharModal = fecharModal
+window.mostrarCadastro = mostrarCadastro
+window.mostrarLista = mostrarLista
+window.voltarHome = voltarHome
 })
