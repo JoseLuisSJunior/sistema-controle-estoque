@@ -1,4 +1,4 @@
-const {Pool} = require('pg')
+const {Pool} = require('pg') //importando a classe Pool da biblioteca pg
 
 const pool = new Pool({
 
@@ -9,4 +9,4 @@ const pool = new Pool({
     port: 5432
 })
 
-module.exports = pool
+module.exports = pool //tornando o objeto pool disponível para outros arquivos do projeto
