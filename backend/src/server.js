@@ -23,12 +23,13 @@ app.get('/ping', async (req, res) => {
 app.post('/produtos', async (req, res) => {
 
   try{
-    const {nome, valor_unitario, quantidade} = req.body
+    const {nome, codigo, valor_unitario, quantidade} = req.body
 
     const valor_total = valor_unitario * quantidade
 
     const result = await pool.query (
-      'INSERT INTO produtos (nome, valor_unitario, quantidade, valor_total) VALUES ($1, $2, $3, $4) RETURNING *',[nome, valor_unitario, quantidade, valor_total]
+      'INSERT INTO produtos (nome, codigo, valor_unitario, quantidade, valor_total) VALUES ($1, $2, $3, $4, $5) RETURNING *',
+      [nome, codigo, valor_unitario, quantidade, valor_total]
     )
 
     res.status(201).json(result.rows[0])
