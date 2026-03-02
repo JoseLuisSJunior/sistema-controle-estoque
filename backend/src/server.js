@@ -75,16 +75,16 @@ app.get('/produtos/:id', async (req, res) => {
 app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params
-    const { nome, valor_unitario, quantidade} = req.body
+    const { nome,codigo, valor_unitario, quantidade} = req.body
 
     const valor_total = valor_unitario * quantidade
 
     const result = await pool.query(
       `UPDATE produtos 
-       SET nome = $1, valor_unitario = $2, quantidade = $3, valor_total = $4 
-       WHERE id = $5 
+       SET nome = $1, codigo = $2, valor_unitario = $3, quantidade = $4, valor_total = $5
+       WHERE id = $6 
        RETURNING *`,
-      [nome, valor_unitario, quantidade, valor_total, id]
+      [nome, codigo, valor_unitario, quantidade, valor_total, id]
     )
 
     if (result.rows.length === 0) {

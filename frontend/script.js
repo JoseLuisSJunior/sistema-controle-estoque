@@ -10,6 +10,31 @@ const listaTela = document.getElementById("listaTela")
 const lista = document.getElementById("listaProdutos")
 const modal = document.getElementById("modal")
 
+const toggleSwitch = document.querySelector('#checkbox');
+const themeIcon = document.getElementById('theme-icon');
+
+function switchTheme(e) {
+    if (e.target.checked) {
+        document.body.classList.add('dark-mode');
+        themeIcon.innerText = '🌙';
+        localStorage.setItem('theme', 'dark');
+    } else {
+        document.body.classList.remove('dark-mode');
+        themeIcon.innerText = '☀️';
+        localStorage.setItem('theme', 'light');
+    }    
+}
+
+// Escuta a mudança no interruptor
+toggleSwitch.addEventListener('change', switchTheme);
+
+// Verifica se o usuário já tinha ativado antes ao recarregar a página
+if (localStorage.getItem('theme') === 'dark') {
+    toggleSwitch.checked = true;
+    document.body.classList.add('dark-mode');
+    themeIcon.innerText = '🌙';
+}
+
 // Navegação
 function mostrarCadastro() {
     home.classList.add("hidden")
@@ -33,13 +58,14 @@ document.getElementById("formProduto").addEventListener("submit", async (e) => {
     e.preventDefault()
 
     const nome = document.getElementById("nome").value
+    const codigo = document.getElementById("codigo").value
     const valor_unitario = document.getElementById("valor_unitario").value
     const quantidade = document.getElementById("quantidade").value
 
     await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, valor_unitario, quantidade })
+        body: JSON.stringify({ nome,codigo, valor_unitario, quantidade})
     })
 
     e.target.reset()
@@ -53,24 +79,21 @@ async function carregarProdutos() {
 
     lista.innerHTML = ""
 
-    lista.innerHTML = ""
-
 produtos.forEach(produto => {
     const div = document.createElement("div")
     div.classList.add("linha-produto")
 
     div.innerHTML = `
         <div>
-            <strong>${produto.nome}</strong><br>
+            <strong>${produto.nome}</strong> (Cód: ${produto.codigo})<br>
             Unitário: R$ ${Number(produto.valor_unitario).toLocaleString("pt-BR", {minimumFractionDigits: 2})}<br>
-            Qtde: ${produto.quantidade}<br>
-            Total: R$ ${Number(produto.valor_total).toLocaleString("pt-BR", {minimumFractionDigits: 2})}
+            Qtde: ${produto.quantidade} | Total: R$ ${Number(produto.valor_total).toLocaleString("pt-BR", {minimumFractionDigits: 2})}
         </div>
         <div>
-            <button onclick="abrirModal(${produto.id}, '${produto.nome}', ${produto.valor_unitario}, ${produto.quantidade})" class="btn-primary">
+            <button onclick="abrirModal(${produto.id}, '${produto.nome}', '${produto.codigo}', ${produto.valor_unitario}, ${produto.quantidade})" class="btn-primary">
                 Editar
             </button>
-            <button onclick="deletarProduto(${produto.id})" style="background:#dc2626; color:white;">
+            <button onclick="deletarProduto(${produto.id})" style="background:#dc2626; color:white; border:none;">
                 Excluir
             </button>
         </div>
@@ -81,10 +104,11 @@ produtos.forEach(produto => {
 }
 
 // Modal
-function abrirModal(id, nome, valor, quantidade) {
+function abrirModal(id, nome, codigo, valor, quantidade) {
     produtoEditandoId = id
 
     document.getElementById("editNome").value = nome
+    document.getElementById("editCodigo").value = codigo
     document.getElementById("editValor").value = valor
     document.getElementById("editQuantidade").value = quantidade
 
@@ -98,13 +122,14 @@ function fecharModal(){
 
 async function salvarEdicao() {
     const nome = document.getElementById("editNome").value
+    const codigo = document.getElementById("editCodigo").value
     const valor_unitario = document.getElementById("editValor").value
     const quantidade = document.getElementById("editQuantidade").value
 
     await fetch(`${API_URL}/${produtoEditandoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, valor_unitario, quantidade })
+        body: JSON.stringify({ nome, codigo, valor_unitario, quantidade})
     })
 
     fecharModal()
