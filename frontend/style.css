@@ -277,7 +277,11 @@ body.dark-mode span {
 .slider:before {
     background-color: white;
     bottom: 4px;
-    content: "";
+    content: "☀️";
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    font-size: 14px;
     height: 26px;
     left: 4px;
     position: absolute;
@@ -295,4 +299,5 @@ input:checked + .slider {
 input:checked + .slider:before {
     transform: translateX(26px);
     background-color: #60a5fa; /* Bolinha azul claro */
+    content: "🌙";
 }

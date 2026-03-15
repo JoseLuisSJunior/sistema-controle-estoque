@@ -11,10 +11,9 @@
 
     <div class="container">
             <div class="theme-switch">
-                <span id="theme=icon">🌙</span>
-                    <label class="theme-switch" for="checkbox">
-                         <input type="checkbox" id="checkbox" />
-                         <div class="slider round"></div>
+                <label class="theme-switch" for="checkbox">
+                        <input type="checkbox" id="checkbox" />
+                        <div class="slider round"></div>
                  </label>
              </div>
 
@@ -23,6 +22,8 @@
         <div id= "menu" class="menu">
             <button onclick="mostrarCadastro()">Cadastrar Produto</button>
             <button onclick="mostrarLista()">Listar Produtos</button>
+            <button onclick="mostrarCadastroFornecedor()">Cadastrar Fornecedor</button>
+            <button onclick="mostrarListaFornecedores()">Listar Fornecedor</button>
         </div>
 
         <!-- Cadastro -->
@@ -33,6 +34,9 @@
                 <input type="text" id="codigo" placeholder="Codigo (Ex: SKU-000)" required>
                 <input type="number" id="valor_unitario" placeholder="Valor Unitário" required>
                 <input type="number" id="quantidade" placeholder="Quantidade" required>
+                <select id="fornecedor_id" required>
+                    <option value="">Selecione um Fornecedor</option>
+                </select>
                 <button type="submit" class="btn-primary">Adicionar</button>
             </form>
             <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
@@ -45,8 +49,23 @@
             <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
         </div>
 
-    </div>
 
+        <div id="cadastroFornecedor" class="card hidden">
+            <h2>Novo Fornecedor</h2>
+            <form id="formFornecedor" class="form">
+                <input type="text" id="fornecedorNome" placeholder="Razão Social" required>
+                <input type="text" id="fornecedorCNPJ" placeholder="CNPJ" required>
+                <input type="email" id="fornecedorContato" placeholder="Email" required>
+                <button type="submit" class="btn-primary">Salvar Fornecedor</button>
+            </form>
+            <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
+        </div>
+        <div id="listaTelaFornecedores" class="card hidden">
+            <h2>Fornecedores Cadastrados</h2>
+            <div id="listaFornecedores" class="tabela"></div>
+            <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
+        </div>
+    </div>
     <!-- MODAL -->
     <div id="modal" class="modal hidden">
         <div class="modal-content">
@@ -56,10 +75,26 @@
             <input type="text" id="editCodigo" placeholder="Código">
             <input type="number" id="editValor" placeholder="Valor">
             <input type="number" id="editQuantidade" placeholder="Quantidade">
+            <select id="editFornecedorId"></select>
 
             <div style="margin-top:15px; text-align:right;">
                 <button onclick="salvarEdicao()" class="btn-primary">Salvar</button>
                 <button onclick="fecharModal()" class="btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="modalFornecedor" class="modal hidden">
+        <div class ="modal-content">
+            <h3>Editar Fornecedor</h3>
+
+            <input type="text" id="editFornecedorNome" placeholder="Razão Social">
+            <input type="text" id="editFornecedorCNPJ" placeholder="CNPJ">
+            <input type="email" id="editFornecedorContato" placeholder="Email">
+
+            <div style="margin-top:15px; text-align: right;">
+                <button type="button" onclick="salvarEdicaoFornecedor()" class="btn-primary">Salvar</button>
+                <button type="button" onclick="fecharModalFornecedor()" class="btn-secondary">Cancelar</button>
             </div>
         </div>
     </div>

@@ -14,7 +14,7 @@
   - [🎯 Sobre o Projeto](#-sobre-o-projeto)
   - [🛠️ Arquitetura e Tecnologias](#️-arquitetura-e-tecnologias)
   - [🚀 Funcionalidades e Sprints (Entregas)](#-funcionalidades-e-sprints-entregas)
-  - [� Documentação da API](#-documentação-da-api)
+  - [📡 Documentação da API](#-documentação-da-api)
     - [📦 Produtos](#-produtos)
   - [⚙️ Como Executar (Ambiente de Desenvolvimento)](#️-como-executar-ambiente-de-desenvolvimento)
     - [Pré-requisitos](#pré-requisitos)
@@ -84,3 +84,28 @@ Certifique-se de ter instalado em sua máquina:
    ```bash
    git clone [https://github.com/JoseLuisSJunior/sistema-controle-estoque.git](https://github.com/JoseLuisSJunior/sistema-controle-estoque.git)
    cd sistema-controle-estoque
+
+2. **Configuração do Banco de Dados**
+    - Crie um banco de dados no PostgreSQL
+    - Execute o script SQL abaixo para criar a tabela inicial:
+        ```sql
+        CREATE TABLE produtos (
+            id SERIAL PRIMARY KEY,
+            nome VARCHAR(255) NOT NULL,
+            codigo VARCHAR(50) NOT NULL,
+            valor_unitario DECIMAL(10,2) NOT NULL,
+            quantidade INT NOT NULL,
+            valor_total DECIMAL(10,2) NOT NULL
+        );
+        ```
+3. **Inicie a API (Back-end):**
+    ```bash
+      npm install
+      node index.js
+    ```
+    _O terminal deverá exibir: ```Servidor rodando na porta 3333```_
+
+4. **Inicie o Cliente (Front-end):**
+      - Abra o arquivo ```index.html``` diretamente no seu navegador ou utilize a extensão **Live Server** no VS Code.
+
+

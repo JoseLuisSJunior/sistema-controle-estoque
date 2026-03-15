@@ -1,8 +1,10 @@
 document.addEventListener("DOMContentLoaded", () => {
 
 const API_URL = "http://localhost:3333/produtos"
+const API_FORNECEDORES = "http://localhost:3333/fornecedores"
 
 let produtoEditandoId = null
+let fornecedorEditandoId = null;
 
 const home = document.getElementById("menu")
 const cadastro = document.getElementById("cadastro")
@@ -16,11 +18,9 @@ const themeIcon = document.getElementById('theme-icon');
 function switchTheme(e) {
     if (e.target.checked) {
         document.body.classList.add('dark-mode');
-        themeIcon.innerText = '🌙';
         localStorage.setItem('theme', 'dark');
     } else {
         document.body.classList.remove('dark-mode');
-        themeIcon.innerText = '☀️';
         localStorage.setItem('theme', 'light');
     }    
 }
@@ -47,11 +47,6 @@ function mostrarLista() {
     carregarProdutos()
 }
 
-function voltarHome() {
-    cadastro.classList.add("hidden")
-    listaTela.classList.add("hidden")
-    home.classList.remove("hidden")
-}
 
 // Criar produto
 document.getElementById("formProduto").addEventListener("submit", async (e) => {
@@ -61,11 +56,12 @@ document.getElementById("formProduto").addEventListener("submit", async (e) => {
     const codigo = document.getElementById("codigo").value
     const valor_unitario = document.getElementById("valor_unitario").value
     const quantidade = document.getElementById("quantidade").value
+    const fornecedor_id = document.getElementById("fornecedor_id").value;
 
     await fetch(API_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome,codigo, valor_unitario, quantidade})
+        body: JSON.stringify({ nome,codigo, valor_unitario, quantidade, fornecedor_id})
     })
 
     e.target.reset()
@@ -77,15 +73,21 @@ async function carregarProdutos() {
     const response = await fetch(API_URL)
     const produtos = await response.json()
 
+    const responseFornecedores = await fetch(API_FORNECEDORES);
+    const fornecedores = await responseFornecedores.json();
+
     lista.innerHTML = ""
 
 produtos.forEach(produto => {
+    const fornecedorProduto = fornecedores.find(f => f.id == produto.fornecedor_id);
+    const nomeFornecedor = fornecedorProduto ? fornecedorProduto.nome : "Fornecedor não cadastrado";
     const div = document.createElement("div")
     div.classList.add("linha-produto")
 
     div.innerHTML = `
         <div>
             <strong>${produto.nome}</strong> (Cód: ${produto.codigo})<br>
+            <span style="color: #64748b; font-size: 0.9em;">Fornecedor: <strong>${nomeFornecedor}</strong></span><br>
             Unitário: R$ ${Number(produto.valor_unitario).toLocaleString("pt-BR", {minimumFractionDigits: 2})}<br>
             Qtde: ${produto.quantidade} | Total: R$ ${Number(produto.valor_total).toLocaleString("pt-BR", {minimumFractionDigits: 2})}
         </div>
@@ -125,11 +127,12 @@ async function salvarEdicao() {
     const codigo = document.getElementById("editCodigo").value
     const valor_unitario = document.getElementById("editValor").value
     const quantidade = document.getElementById("editQuantidade").value
+    const fornecedor_id = document.getElementById("editFornecedorId").value
 
     await fetch(`${API_URL}/${produtoEditandoId}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ nome, codigo, valor_unitario, quantidade})
+        body: JSON.stringify({ nome, codigo, valor_unitario, quantidade, fornecedor_id})
     })
 
     fecharModal()
@@ -142,11 +145,161 @@ async function deletarProduto(id) {
     await fetch(`${API_URL}/${id}`, { method: "DELETE" })
     carregarProdutos()
 }
+
+
+const telaCadastroFornecedor = document.getElementById("cadastroFornecedor");
+const telaListaFornecedores = document.getElementById("listaTelaFornecedores");
+const divListaFornecedores = document.getElementById("ListaFornecedores");
+
+function mostrarCadastroFornecedor() {
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("listaTelaFornecedores").classList.add("hidden");
+    document.getElementById("cadastroFornecedor").classList.remove("hidden");
+}
+
+function mostrarListaFornecedores() {
+    document.getElementById("menu").classList.add("hidden");
+    document.getElementById("cadastroFornecedor").classList.add("hidden");
+    document.getElementById("listaTelaFornecedores").classList.remove("hidden");
+    carregarFornecedores();
+}
+
+document.getElementById("formFornecedor").addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const nome = document.getElementById("fornecedorNome").value;
+    const cnpj = document.getElementById("fornecedorCNPJ").value;
+    const contato = document.getElementById("fornecedorContato").value;
+
+    if (!contato.includes("@") || !contato.includes(".com")) {
+        alert("Erro: O e-mail deve conter o domínio");
+        return;
+    }
+
+    await fetch(API_FORNECEDORES, {
+        method:"POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({nome, cnpj, contato})
+    });
+    e.target.reset();
+    alert("Fornecedor cadastrado com sucesso");
+    carregarSelectFornecedores();
+    voltarHome();
+});
+
+async function carregarFornecedores() {
+
+    const response = await fetch(API_FORNECEDORES);
+    const fornecedores = await response.json();
+    const ListaFornecedores = document.getElementById("listaFornecedores");
+    ListaFornecedores.innerHTML= "";
+
+    fornecedores.forEach(forn => {
+        const div = document.createElement("div");
+        div.classList.add("linha-produto");
+        div.innerHTML = `
+        <div>
+            <strong>${forn.nome}</strong><br>
+            CNPJ: ${forn.cnpj} | Contato: ${forn.contato}
+        </div>
+        <div>
+            <button onclick="abrirModalFornecedor(${forn.id}, '${forn.nome}', '${forn.cnpj}', '${forn.contato}')" class="btn-primary">Editar</button>
+            <button onclick="deletarFornecedor(${forn.id})" style="background:#dc2626; color:white; border:none; padding:8px 15px; border-radius:5px; cursor:pointer;">Excluir</button>
+            </div>
+        `;
+        ListaFornecedores.appendChild(div);
+
+    });
+}
+
+window.deletarFornecedor = async function (id) {
+    if(!confirm("Tem certeza que deseja excluir esse fornecedor?")) return;
+    await fetch(`${API_FORNECEDORES}/${id}`, {method: "DELETE"});
+    carregarFornecedores();
+    carregarSelectFornecedores();
+}
+
+async function carregarSelectFornecedores() {
+    const response = await fetch(API_FORNECEDORES);
+    const fornecedores = await response.json();
+
+    const selectCadastro = document.getElementById("fornecedor_id");
+    const selectEdit = document.getElementById("editFornecedorId");
+
+    let options = `<option value=""> Selecione um Fornecedor</option>`;
+    fornecedores.forEach(f => {
+        options += `<option value="${f.id}">${f.nome}</option>`;
+    });
+    if(selectCadastro) selectCadastro.innerHTML = options;
+    if(selectEdit) selectEdit.innerHTML = options;
+}
+
+window.abrirModalFornecedor = function(id, nome, cnpj, contato) {
+    fornecedorEditandoId = id; // Salva o ID na memória
+    
+    // Preenche os campos da janelinha com os dados atuais
+    document.getElementById("editFornecedorNome").value = nome;
+    document.getElementById("editFornecedorCNPJ").value = cnpj;
+    document.getElementById("editFornecedorContato").value = contato;
+    
+    // Mostra o modal
+    document.getElementById("modalFornecedor").classList.remove("hidden");
+}
+
+window.fecharModalFornecedor = function() {
+    // Esconde o modal e limpa o ID
+    document.getElementById("modalFornecedor").classList.add("hidden");
+    fornecedorEditandoId = null;
+}
+
+window.salvarEdicaoFornecedor = async function() {
+    // 1. Pega os valores atualizados do HTML
+    const nome = document.getElementById("editFornecedorNome").value;
+    const cnpj = document.getElementById("editFornecedorCNPJ").value;
+    const contato = document.getElementById("editFornecedorContato").value;
+
+    if (!contato.includes("@") || !contato.includes(".com")){
+        alert("Erro: O e-mail deve conter o domínio");
+        return;
+    }
+
+    // 2. Envia a atualização (PUT) para o Back-end
+    await fetch(`${API_FORNECEDORES}/${fornecedorEditandoId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ nome, cnpj, contato })
+    });
+
+    // 3. Fecha a janela e recarrega a lista com os dados novos
+    fecharModalFornecedor();
+    carregarFornecedores();
+}
+
+
+window.voltarHome = function() {
+    const telaCadProd = document.getElementById("cadastro");
+    if (telaCadProd) telaCadProd.classList.add("hidden");
+
+    const telaListaProd = document.getElementById("listaTela");
+    if (telaListaProd) telaListaProd.classList.add("hidden");
+
+    const telaCadForn = document.getElementById("cadastroFornecedor");
+    if (telaCadForn) telaCadForn.classList.add("hidden");
+
+    const telaListaForn = document.getElementById("listaTelaFornecedores");
+    if (telaListaForn) telaListaForn.classList.add("hidden");
+
+    const menuPrincipal = document.getElementById("menu");
+    if (menuPrincipal) menuPrincipal.classList.remove("hidden");
+}
+
+carregarSelectFornecedores();
+
 window.deletarProduto = deletarProduto
 window.abrirModal = abrirModal
 window.salvarEdicao = salvarEdicao
 window.fecharModal = fecharModal
 window.mostrarCadastro = mostrarCadastro
 window.mostrarLista = mostrarLista
-window.voltarHome = voltarHome
+window.mostrarCadastroFornecedor = mostrarCadastroFornecedor;
+window.mostrarListaFornecedores = mostrarListaFornecedores;
 })
