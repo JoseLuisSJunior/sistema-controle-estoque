@@ -213,10 +213,25 @@ async function carregarFornecedores() {
 
 window.deletarFornecedor = async function (id) {
     if(!confirm("Tem certeza que deseja excluir esse fornecedor?")) return;
-    await fetch(`${API_FORNECEDORES}/${id}`, {method: "DELETE"});
-    carregarFornecedores();
-    carregarSelectFornecedores();
+    
+    try {
+        // 1. Manda a ordem de deletar pro Back-end
+        const resposta = await fetch(`${API_FORNECEDORES}/${id}`, { method: "DELETE" });
+
+        // aceita exclusão, pois não tem produtos linkados
+        if (resposta.ok) {
+            alert("Fornecedor excluído com sucesso!");
+            carregarFornecedores();
+            carregarSelectFornecedores();
+        } else {
+            // alerta para não exclusão devido vinculo ao estoque
+            alert("Não é possível excluir este fornecedor! Ele possui PRODUTOS cadastrados no estoque. Exclua os produtos dele primeiro.");
+        }
+    } catch (erro) {
+        alert("Erro de conexão com o servidor.");
+    }
 }
+
 
 async function carregarSelectFornecedores() {
     const response = await fetch(API_FORNECEDORES);
