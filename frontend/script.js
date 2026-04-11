@@ -2,6 +2,8 @@ document.addEventListener("DOMContentLoaded", () => {
 
 const API_URL = "http://localhost:3333/produtos"
 const API_FORNECEDORES = "http://localhost:3333/fornecedores"
+const API_MOVIMENTACOES = "http://localhost:3333/movimentacoes"
+
 
 let produtoEditandoId = null
 let fornecedorEditandoId = null;
@@ -44,6 +46,7 @@ function mostrarCadastro() {
 function mostrarLista() {
     home.classList.add("hidden")
     listaTela.classList.remove("hidden")
+    document.getElementById("telaMovimentacoes").style.display = "none";
     carregarProdutos()
 }
 
@@ -161,6 +164,7 @@ function mostrarListaFornecedores() {
     document.getElementById("menu").classList.add("hidden");
     document.getElementById("cadastroFornecedor").classList.add("hidden");
     document.getElementById("listaTelaFornecedores").classList.remove("hidden");
+    document.getElementById("telaMovimentacoes").style.display = "none";
     carregarFornecedores();
 }
 
@@ -305,9 +309,130 @@ window.voltarHome = function() {
 
     const menuPrincipal = document.getElementById("menu");
     if (menuPrincipal) menuPrincipal.classList.remove("hidden");
+
+    const telaMov = document.getElementById("telaMovimentacoes");
+    if (telaMov) telaMov.style.display = "none";
+}
+
+// AC3
+
+async function carregarSelectProdutosMovimentacao() {
+    try {
+        const response = await fetch(API_URL);
+        const produtos = await response.json();
+        
+        const select = document.getElementById("movProdutoId");
+        select.innerHTML = "<option value=''>Selecione um Produto...</option>";
+        
+        produtos.forEach(p => {
+            select.innerHTML += `<option value="${p.id}">${p.nome} (Estoque atual: ${p.quantidade})</option>`;
+        });
+    } catch (erro) {
+        console.error("Erro ao carregar produtos no select:", erro);
+    }
+}
+
+
+window.registrarMovimentacao = async function(event) {
+    event.preventDefault(); // Evita que a página recarregue do zero
+
+    const produto_id = document.getElementById("movProdutoId").value;
+    const tipo = document.getElementById("movTipo").value;
+    const quantidade = parseInt(document.getElementById("movQuantidade").value);
+
+    try {
+        const resposta = await fetch(API_MOVIMENTACOES, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ produto_id, tipo, quantidade })
+        });
+
+        const dados = await resposta.json();
+
+        if (resposta.ok) {
+            alert(` Movimentação registrada com sucesso!`);
+            document.getElementById("formMovimentacao").reset();
+            carregarMovimentacoes();
+            carregarSelectProdutosMovimentacao();
+            carregarProdutos(); 
+        } else {
+            // Se o Back-end barrar (ex: tentar tirar mais do que tem), avisa o usuário
+            alert(` Erro: ${dados.error}`);
+        }
+    } catch (erro) {
+        alert("Erro de conexão com o servidor.");
+    }
+}
+
+async function carregarMovimentacoes() {
+    try {
+        const response = await fetch(API_MOVIMENTACOES);
+        const historico = await response.json();
+        
+        const lista = document.getElementById("listaMovimentacoes");
+        lista.innerHTML = "";
+
+        if (historico.length === 0) {
+            lista.innerHTML = "<p>Nenhuma movimentação registrada ainda.</p>";
+            return;
+        }
+
+        historico.forEach(mov => {
+        
+            const cor = mov.tipo === 'entrada' ? 'green' : 'red';
+            const sinal = mov.tipo === 'entrada' ? '+' : '-';
+            const dataFormatada = new Date(mov.data_hora).toLocaleString('pt-BR');
+
+            lista.innerHTML += `
+                <div class="linha-produto" style="border-left: 5px solid ${cor};">
+                    <div>
+                        <strong>${mov.produto_nome}</strong><br>
+                        <span style="font-size: 0.85em; color: gray;"> ${dataFormatada}</span>
+                    </div>
+                    <div>
+                        <strong style="color: ${cor}; font-size: 1.2em;">${sinal} ${mov.quantidade}</strong>
+                    </div>
+                </div>
+            `;
+        });
+    } catch (erro) {
+        console.error("Erro ao listar histórico:", erro);
+    }
+}
+
+window.mostrarMovimentacoes = function() {
+    // 1. Esconde o menu principal
+    const menu = document.getElementById("menu");
+    if (menu) menu.classList.add("hidden");
+
+    // 2. Esconde as telas de Produtos
+    const telaCadProd = document.getElementById("cadastro");
+    if (telaCadProd) telaCadProd.classList.add("hidden");
+    const telaListaProd = document.getElementById("listaTela");
+    if (telaListaProd) telaListaProd.classList.add("hidden");
+
+    // 3. Esconde as telas de Fornecedores
+    const telaCadForn = document.getElementById("cadastroFornecedor");
+    if (telaCadForn) telaCadForn.classList.add("hidden");
+    const telaListaForn = document.getElementById("listaTelaFornecedores");
+    if (telaListaForn) telaListaForn.classList.add("hidden");
+
+    // 4. Mostra a tela nova de Movimentações
+    const telaMov = document.getElementById("telaMovimentacoes");
+    if (telaMov) {
+        telaMov.style.display = "block";
+    } else {
+        alert("A div com id 'telaMovimentacoes' não foi encontrada no HTML!");
+    }
+
+    // Atualiza os dados do estoque na tela
+    carregarSelectProdutosMovimentacao();
+    carregarMovimentacoes();
 }
 
 carregarSelectFornecedores();
+carregarMovimentacoes();
+carregarSelectProdutosMovimentacao();
 
 window.deletarProduto = deletarProduto
 window.abrirModal = abrirModal

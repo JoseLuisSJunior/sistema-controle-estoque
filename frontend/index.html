@@ -24,6 +24,7 @@
             <button onclick="mostrarLista()">Listar Produtos</button>
             <button onclick="mostrarCadastroFornecedor()">Cadastrar Fornecedor</button>
             <button onclick="mostrarListaFornecedores()">Listar Fornecedor</button>
+            <button onclick="mostrarMovimentacoes()" style="background-color: #0284c7; color: white;"> Movimentações</button>
         </div>
 
         <!-- Cadastro -->
@@ -98,6 +99,48 @@
             </div>
         </div>
     </div>
+
+<div id="telaMovimentacoes" style="display: none; background-color: var(--bg-card, white); padding: 30px; border-radius: 10px; max-width: 800px; margin: 30px auto; box-shadow: 0 4px 15px rgba(0,0,0,0.2); color: var(--text-color, #1e293b);">
+    <div style="margin-bottom: 25px;">
+            <button onclick="voltarHome()" class="btn-secondary">Voltar</button>
+        </div>
+    <h2 style="text-align: center; margin-bottom: 25px;"> Movimentação de Estoque</h2>
+
+    <div style="background-color: var(--bg-input, #f8fafc); padding: 20px; border-radius: 8px; border: 1px solid var(--border-color, #e2e8f0);">
+        <form id="formMovimentacao" onsubmit="registrarMovimentacao(event)" style="display: flex; flex-direction: column; gap: 15px;">
+            
+            <div style="display: flex; flex-direction: column; gap: 5px;">
+                <label style="font-weight: bold;">Produto a ser movimentado:</label>
+                <select id="movProdutoId" required style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;"></select>
+            </div>
+
+            <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+                <div style="display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 200px;">
+                    <label style="font-weight: bold;">Tipo de Movimentação:</label>
+                    <select id="movTipo" required style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+                        <option value="entrada">Entrada (+ Adicionar ao Saldo)</option>
+                        <option value="saida">Saída (- Retirar do saldo)</option>
+                    </select>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 5px; flex: 1; min-width: 150px;">
+                    <label style="font-weight: bold;">Quantidade:</label>
+                    <input type="number" id="movQuantidade" min="1" required placeholder="Ex: 10" style="padding: 10px; border-radius: 5px; border: 1px solid #ccc; font-size: 1rem;">
+                </div>
+            </div>
+
+            <button type="submit" style="background-color: #0284c7; color: white; margin-top: 10px; padding: 15px; font-size: 1.1em; font-weight: bold; width: 100%; border: none; border-radius: 5px; cursor: pointer; transition: 0.3s;">
+                Registrar Movimentação
+            </button>
+        </form>
+    </div>
+
+    <hr style="margin: 30px 0; border: none; border-top: 2px solid var(--border-color, #e2e8f0);">
+
+    <h3 style="margin-bottom: 15px;"> Histórico de Movimentações</h3>
+    <div id="listaMovimentacoes" style="display: flex; flex-direction: column; gap: 10px;">
+        </div>
+</div>
 
     <script src="script.js" defer></script>
     </body>

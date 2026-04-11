@@ -1,11 +1,14 @@
-const express = require('express')
-const cors = require('cors')
-const pool = require('./config/database')
+const path = require('path');
+require('dotenv').config({path: path.resolve(__dirname, '../.env')});
+const express = require('express');
+const cors = require('cors');
+const pool = require('./config/database');
+const app = express();
 
-const app = express()
-
-app.use(cors())
-app.use(express.json())
+app.use(cors({
+  origin: process.env.FRONTEND_URL
+}));
+app.use(express.json({ limit: '10kb'}))
 
 app.get('/', (req, res) => {
   res.send('API Controle de estoque funcionando')
@@ -24,6 +27,10 @@ app.post('/produtos', async (req, res) => {
 
   try{
     const {nome, codigo, valor_unitario, quantidade, fornecedor_id} = req.body
+
+    if (valor_unitario < 0 || quantidade <0) {
+      return res.status(400)
+    }
 
     const valor_total = valor_unitario * quantidade
 
@@ -76,6 +83,10 @@ app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params
     let { nome,codigo, valor_unitario, quantidade, fornecedor_id} = req.body
+
+    if (valor_unitario < 0 || quantidade <0){
+      return res.status(400)
+    }
 
     if (fornecedor_id === ''){
       fornecedor_id = null;
@@ -195,6 +206,70 @@ app.delete('/fornecedores/:id', async (req, res) => {
   } catch(error) {
     res.status(500).json({error: 'Erro ao deletar fornecedor'});
   }
+});
+
+// AC3
+
+app.post('/movimentacoes', async (req, res) => {
+
+  const client = await pool.connect();
+  try {
+    const {produto_id, tipo, quantidade} = req.body;
+
+  if (quantidade <=0){
+
+    return res.status(400)
+  }
+
+  await client.query('BEGIN'); //proteção do banco
+
+  // histórico movimentações
+  const resultMov = await client.query(
+    'INSERT INTO movimentacoes (produto_id, tipo, quantidade) VALUES ($1, $2, $3) RETURNING *', [produto_id, tipo, quantidade]
+  );
+
+const qtdAjustada = tipo === 'entrada' ? quantidade : -quantidade;
+
+const resultProd = await client.query(
+    'UPDATE produtos SET quantidade = quantidade + $1 WHERE id = $2 RETURNING quantidade',
+    [qtdAjustada, produto_id]
+  );
+
+  // evita tirar mais do que tem no estoque
+  if (resultProd.rows[0].quantidade < 0) {
+    throw new Error ('Estoque insuficiente');
+  }
+  await client.query('COMMIT');
+  res.status(201).json(resultMov.rows[0]);
+} catch (error) {
+  await client.query('ROLLBACK');
+  console.error('Erro na transação de estoque:', error);
+  res.status(400).json({ error: error.message || 'Erro ao registrar movimentação'});
+} finally {
+  client.release();
+}
+ });
+
+ // leitura de histórico
+app.get('/movimentacoes', async (req, res) => {
+    try {
+      const result = await pool.query(`
+        SELECT 
+            m.id, 
+            m.tipo, 
+            m.quantidade, 
+            m.data_hora, 
+            p.nome AS produto_nome 
+        FROM movimentacoes m
+        JOIN produtos p ON m.produto_id = p.id
+        ORDER BY m.data_hora DESC
+      `);
+      
+      res.status(200).json(result.rows);
+    } catch (error) {
+      console.error('Erro ao listar movimentações:', error);
+      res.status(500).json({ error: 'Erro ao buscar o histórico de estoque' });
+    }
 });
 
 const PORT = 3333
