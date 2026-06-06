@@ -1,7 +1,7 @@
 # 📦 Sistema de Controle de Estoque (SCE)
 
-![Status](https://img.shields.io/badge/Status-Em_Desenvolvimento-blue)
-![Stack](https://img.shields.io/badge/Stack-Node.js_|_Vanilla_JS_|_PostgreSQL-success)
+![Status](https://img.shields.io/badge/Status-Concluído-success)
+![Stack](https://img.shields.io/badge/Stack-Node.js_|_Vanilla_JS_|_PostgreSQL_|_Chart.js-blue)
 ![License](https://img.shields.io/badge/License-Academic-lightgrey)
 
 > Projeto de Software desenvolvido com foco em um sistema de gerenciamento de inventário, priorizando performance, arquitetura limpa em 3 camadas e facilidade de uso.
@@ -16,6 +16,9 @@
   - [🚀 Funcionalidades e Sprints (Entregas)](#-funcionalidades-e-sprints-entregas)
   - [📡 Documentação da API](#-documentação-da-api)
     - [📦 Produtos](#-produtos)
+    - [🏢 Fornecedores](#-fornecedores)
+    - [🏷️ Categorias](#️-categorias)
+    - [🔄 Movimentações e Dashboard](#-movimentações-e-dashboard)
   - [⚙️ Como Executar (Ambiente de Desenvolvimento)](#️-como-executar-ambiente-de-desenvolvimento)
     - [Pré-requisitos](#pré-requisitos)
     - [Passo a passo](#passo-a-passo)
@@ -24,20 +27,21 @@
 
 ## 🎯 Sobre o Projeto
 
-O SCE foi projetado para resolver o problema de controle de fluxo de mercadorias. Ele permite o cadastro rápido de produtos e fornecedores, além de registrar o histórico de movimentações (entradas e saídas). A aplicação consolida esses dados para gerar alertas automáticos de estoque baixo, auxiliando na tomada de decisão.
+O SCE foi projetado para resolver o problema de controle de fluxo de mercadorias. Ele permite o cadastro rápido de produtos, categorias e fornecedores, além de registrar o histórico de movimentações (entradas e saídas) com controle transacional rigoroso. A aplicação consolida esses dados em um Dashboard Executivo para gerar alertas automáticos de estoque baixo, auxiliando na tomada de decisão.
 
 ## 🛠️ Arquitetura e Tecnologias
 
 A aplicação segue a **Arquitetura de 3 Camadas** (Client-Server), garantindo a separação de responsabilidades:
 
 **1. Camada de Apresentação (Front-end)**
-- HTML5 e CSS3 (Design Responsivo + Dark Mode 🌙)
-- JavaScript (Vanilla JS, Single Page Application via manipulação de DOM)
+- HTML5 e CSS3 (Design Responsivo + Dark Mode 🌙).
+- JavaScript (Vanilla JS, Single Page Application via manipulação de DOM).
+- **Chart.js** para renderização de gráficos em tempo real.
 - Comunicação assíncrona com `Fetch API`.
 
 **2. Camada de Negócios (Back-end)**
 - **Node.js** com **Express** para criação da API RESTful.
-- **CORS** para controle de acesso.
+- **CORS** para controle de acesso e segurança de payload.
 
 **3. Camada de Persistência (Banco de Dados)**
 - **PostgreSQL** (Banco de dados relacional).
@@ -47,12 +51,12 @@ A aplicação segue a **Arquitetura de 3 Camadas** (Client-Server), garantindo a
 
 ## 🚀 Funcionalidades e Sprints (Entregas)
 
-O escopo do projeto foi dividido em 4 fases incrementais:
+O escopo do projeto foi dividido e entregue em 4 fases incrementais:
 
 - [x] **AC1 - Core de Produtos:** CRUD completo de itens no estoque. Cálculo automático de valor total.
-- [ ] **AC2 - Gestão de Fornecedores:** CRUD de fornecedores (Nome, CNPJ e Contato).
-- [ ] **AC3 - Movimentação:** Lógica transacional de Entrada/Saída e atualização de saldo em tempo real.
-- [ ] **Prova Final - BI, Alertas e Controle de categorias:** Dashboard consolidado, formatação de alertas visuais para ruptura de estoque, criação de categorias para separar os itens cadastrados no estoque (Ex.: Mouse > Eletrônicos, Camiseta > Vestuário, entre outros) e entrega do Diagrama de Classes.
+- [x] **AC2 - Gestão de Fornecedores:** CRUD de fornecedores (Nome, CNPJ e Contato) com travas de exclusão.
+- [x] **AC3 - Movimentação:** Lógica transacional de Entrada/Saída e atualização de saldo em tempo real com registro de histórico.
+- [x] **Prova Final - BI, Alertas e Controle de Categorias:** Dashboard consolidado, formatação de alertas visuais para ruptura de estoque, criação de categorias para separação de itens e entrega dos diagramas estruturais.
 
 ---
 
@@ -63,11 +67,33 @@ Abaixo estão os *endpoints* disponíveis para integração. O servidor roda por
 ### 📦 Produtos
 | Método | Rota | Descrição |
 | :--- | :--- | :--- |
-| `GET` | `/produtos` | Retorna a lista de todos os produtos cadastrados. |
-| `GET` | `/produtos/:id` | Retorna os detalhes de um produto específico. |
+| `GET` | `/produtos` | Retorna a lista de produtos ativos com status de estoque. |
 | `POST` | `/produtos` | Cria um novo produto no banco de dados. |
 | `PUT` | `/produtos/:id` | Atualiza os dados de um produto existente. |
-| `DELETE` | `/produtos/:id` | Remove um produto do sistema. |
+| `DELETE` | `/produtos/:id` | Realiza o *soft delete* de um produto. |
+
+### 🏢 Fornecedores
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/fornecedores` | Retorna a lista de fornecedores ativos. |
+| `POST` | `/fornecedores` | Cadastra um novo fornecedor. |
+| `PUT` | `/fornecedores/:id` | Atualiza os dados do fornecedor. |
+| `DELETE` | `/fornecedores/:id` | Inativa o fornecedor (bloqueado se houver vínculo com produtos). |
+
+### 🏷️ Categorias
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/categorias` | Retorna as categorias disponíveis. |
+| `POST` | `/categorias` | Cria uma nova categoria de agrupamento. |
+| `PUT` | `/categorias/:id` | Atualiza o nome da categoria. |
+| `DELETE` | `/categorias/:id` | Inativa a categoria (bloqueado se houver vínculo). |
+
+### 🔄 Movimentações e Dashboard
+| Método | Rota | Descrição |
+| :--- | :--- | :--- |
+| `GET` | `/movimentacoes` | Retorna o histórico de entradas e saídas. |
+| `POST` | `/movimentacoes` | Registra uma transação e atualiza o saldo do produto. |
+| `GET` | `/dashboard/geral` | Retorna os KPIs financeiros e dados agregados para os gráficos. |
 
 ---
 
@@ -84,28 +110,3 @@ Certifique-se de ter instalado em sua máquina:
    ```bash
    git clone [https://github.com/JoseLuisSJunior/sistema-controle-estoque.git](https://github.com/JoseLuisSJunior/sistema-controle-estoque.git)
    cd sistema-controle-estoque
-
-2. **Configuração do Banco de Dados**
-    - Crie um banco de dados no PostgreSQL
-    - Execute o script SQL abaixo para criar a tabela inicial:
-        ```sql
-        CREATE TABLE produtos (
-            id SERIAL PRIMARY KEY,
-            nome VARCHAR(255) NOT NULL,
-            codigo VARCHAR(50) NOT NULL,
-            valor_unitario DECIMAL(10,2) NOT NULL,
-            quantidade INT NOT NULL,
-            valor_total DECIMAL(10,2) NOT NULL
-        );
-        ```
-3. **Inicie a API (Back-end):**
-    ```bash
-      npm install
-      node index.js
-    ```
-    _O terminal deverá exibir: ```Servidor rodando na porta 3333```_
-
-4. **Inicie o Cliente (Front-end):**
-      - Abra o arquivo ```index.html``` diretamente no seu navegador ou utilize a extensão **Live Server** no VS Code.
-
-

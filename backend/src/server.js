@@ -26,18 +26,18 @@ app.get('/ping', async (req, res) => {
 app.post('/produtos', async (req, res) => {
 
   try{
-    const {nome, codigo, valor_unitario, quantidade, fornecedor_id} = req.body
+    const {nome, codigo, valor_unitario, quantidade, fornecedor_id, categoria_id} = req.body
 
     if (valor_unitario < 0 || quantidade <0) {
-      return res.status(400)
+      return res.status(400).json({ error: 'Valores e quantidades não podem ser negativos'})
     }
 
     const valor_total = valor_unitario * quantidade
 
     const result = await pool.query (
-      'INSERT INTO produtos (nome, codigo, valor_unitario, quantidade, valor_total, fornecedor_id) VALUES ($1, $2, $3, $4, $5, $6) RETURNING *',
-      [nome, codigo, valor_unitario, quantidade, valor_total, fornecedor_id]
-    )
+      'INSERT INTO produtos (nome, codigo, valor_unitario, quantidade, valor_total, fornecedor_id, categoria_id) VALUES ($1, $2, $3, $4, $5, $6, $7) RETURNING *',
+      [nome, codigo, valor_unitario, quantidade, valor_total, fornecedor_id || null, categoria_id || null]
+    );
 
     res.status(201).json(result.rows[0])
   } catch (error) {
@@ -50,7 +50,7 @@ app.post('/produtos', async (req, res) => {
 app.get('/produtos', async (req,res) => {
   
   try {
-    const result = await pool.query('SELECT * FROM produtos ORDER BY id ASC')
+    const result = await pool.query('SELECT p.*, c.nome AS categoria_nome, (p.quantidade <= 5) AS is_baixo_estoque FROM produtos p LEFT JOIN categorias c ON p.categoria_id = c.id WHERE p.ativo = true ORDER BY p.id ASC');
     res.status(200).json(result.rows)
   }catch(error) {
     console.error('Erro ao listar produtos: ', error)
@@ -82,24 +82,23 @@ app.get('/produtos/:id', async (req, res) => {
 app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params
-    let { nome,codigo, valor_unitario, quantidade, fornecedor_id} = req.body
+    let { nome,codigo, valor_unitario, quantidade, fornecedor_id, categoria_id} = req.body
 
     if (valor_unitario < 0 || quantidade <0){
-      return res.status(400)
+      return res.status(400).json({ error: 'Valores e quantidades não podem ser negativos'})
     }
 
-    if (fornecedor_id === ''){
-      fornecedor_id = null;
-    }
+    if (fornecedor_id === '') fornecedor_id = null;
+    if (categoria_id === '') categoria_id = null;
 
     const valor_total = valor_unitario * quantidade
 
     const result = await pool.query(
       `UPDATE produtos 
-       SET nome = $1, codigo = $2, valor_unitario = $3, quantidade = $4, valor_total = $5, fornecedor_id = $6
-       WHERE id = $7
+       SET nome = $1, codigo = $2, valor_unitario = $3, quantidade = $4, valor_total = $5, fornecedor_id = $6, categoria_id = $7
+       WHERE id = $8
        RETURNING *`,
-      [nome, codigo, valor_unitario, quantidade, valor_total,fornecedor_id, id]
+      [nome, codigo, valor_unitario, quantidade, valor_total,fornecedor_id, categoria_id, id]
     )
 
     if (result.rows.length === 0) {
@@ -116,24 +115,15 @@ app.put('/produtos/:id', async (req, res) => {
 
 app.delete('/produtos/:id', async (req, res) => {
   try {
-    const { id } = req.params
+      const { id } = req.params;
 
-    const result = await pool.query(
-      'DELETE FROM produtos WHERE id = $1 RETURNING *',
-      [id]
-    )
-
-    if (result.rows.length === 0) {
-      return res.status(404).json({ error: 'Produto não encontrado' })
+      await pool.query('UPDATE produtos SET ativo = false WHERE id = $1', [id]);
+      res.status(200).json({ message: 'Produto enviado para a lixeira' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ error: 'Erro ao excluir produto' });
     }
-
-    res.status(200).json({ message: 'Produto removido com sucesso' })
-
-  } catch (error) {
-    console.error('ERRO AO DELETAR PRODUTO:', error)
-    res.status(500).json({ error: 'Erro ao deletar produto' })
-  }
-})
+  });
 
 // AC2 - Função fornecedores (Criar)
 app.post('/fornecedores', async (req, res) => {
@@ -152,7 +142,7 @@ app.post('/fornecedores', async (req, res) => {
 // AC2 - Função fornecedores (listar)
 app.get('/fornecedores', async (req, res) => {
   try {
-    const result = await pool.query('SELECT * FROM fornecedores ORDER BY id ASC')
+    const result = await pool.query('SELECT * FROM fornecedores WHERE ativo = true ORDER BY id ASC')
     res.status(200).json(result.rows)
   } catch (error){
     console.error('Erro ao listar fornecedores: ', error)
@@ -199,15 +189,19 @@ app.put('/fornecedores/:id', async (req, res) => {
 app.delete('/fornecedores/:id', async (req, res) => {
   try {
     const {id} = req.params;
-    const result = await pool.query('DELETE FROM fornecedores WHERE id= $1 RETURNING *', [id]);
-    if (result.rows.length === 0) return res.status(404).json({ error: 'Fornecedor não encontrado' });
-    res.status(200).json({message: 'Fornecedor removido'});
+    
+    const check = await pool.query('SELECT COUNT(*) FROM produtos WHERE fornecedor_id = $1 AND ativo = true', [id]);
+    if (parseInt(check.rows[0].count) > 0) {
+        return res.status(400).json({ error: 'Não é possível excluir: existem produtos usando este fornecedor.' });
+    }
 
-  } catch(error) {
-    res.status(500).json({error: 'Erro ao deletar fornecedor'});
+    await pool.query('UPDATE fornecedores SET ativo = false WHERE id = $1', [id]);
+    res.status(200).json({message: 'Fornecedor enviado para a lixeira'});
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({error: 'Erro ao excluir fornecedor' });
   }
 });
-
 // AC3
 
 app.post('/movimentacoes', async (req, res) => {
@@ -218,7 +212,7 @@ app.post('/movimentacoes', async (req, res) => {
 
   if (quantidade <=0){
 
-    return res.status(400)
+    return res.status(400).json({ error: 'A quantidade movimentada deve ser maior que zero'})
   }
 
   await client.query('BEGIN'); //proteção do banco
@@ -271,6 +265,96 @@ app.get('/movimentacoes', async (req, res) => {
       res.status(500).json({ error: 'Erro ao buscar o histórico de estoque' });
     }
 });
+
+// AC4 - CRUD CATEGORIAS
+app.get('/categorias', async (req, res) => {
+  try {
+    const result = await pool.query('SELECT * FROM categorias WHERE ativo = true ORDER BY nome ASC');
+    res.status(200).json(result.rows);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar categorias' });
+  }
+    
+  
+});
+
+
+app.post('/categorias', async (req, res) => {
+  try{
+    const {nome} = req.body;
+    if (!nome) return res.status(400).json({error: 'O nome da categoria é obrigatório'});
+
+    const result = await pool.query('INSERT INTO categorias (nome) VALUES ($1) RETURNING *', [nome]);
+    res.status(201).json(result.rows[0]);
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao cadastrar categoria'});
+  }
+
+});
+
+app.put('/categorias/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        const { nome } = req.body;
+        await pool.query('UPDATE categorias SET nome = $1 WHERE id = $2', [nome, id]);
+        res.status(200).json({ message: 'Categoria atualizada' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao atualizar categoria' });
+    }
+});
+
+app.delete('/categorias/:id', async (req, res) => {
+    try {
+        const { id } = req.params;
+        // Trava de segurança: verifica se tem produtos usando a categoria
+        const check = await pool.query('SELECT COUNT(*) FROM produtos WHERE categoria_id = $1 AND ativo = true', [id]);
+        if (parseInt(check.rows[0].count) > 0) {
+            return res.status(400).json({ error: 'Não é possível excluir: existem produtos usando esta categoria.' });
+        }
+        await pool.query('UPDATE categorias SET ativo = false WHERE id = $1', [id]);
+        res.status(200).json({ message: 'Categoria excluída com sucesso' });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao excluir categoria' });
+    }
+});
+
+app.get('/dashboard/geral', async (req, res) => {
+    try {
+        const stats = await pool.query(`
+            SELECT 
+                (SELECT COUNT(*) FROM produtos WHERE ativo = true) as total_produtos,
+                (SELECT COUNT(*) FROM fornecedores WHERE ativo = true) as total_fornecedores,
+                (SELECT COALESCE(SUM(valor_total), 0) FROM produtos WHERE ativo = true) as valor_total_estoque,
+                (SELECT COALESCE(SUM(m.quantidade * p.valor_unitario), 0) 
+                 FROM movimentacoes m JOIN produtos p ON m.produto_id = p.id 
+                 WHERE m.tipo = 'entrada') as valor_total_entrada,
+                (SELECT COALESCE(SUM(m.quantidade * p.valor_unitario), 0) 
+                 FROM movimentacoes m JOIN produtos p ON m.produto_id = p.id 
+                 WHERE m.tipo = 'saida') as valor_total_saida
+        `);
+
+        const porCategoria = await pool.query(`
+            SELECT c.nome, COUNT(p.id) as total FROM categorias c
+            LEFT JOIN produtos p ON c.id = p.categoria_id AND p.ativo = true
+            WHERE c.ativo = true GROUP BY c.nome
+        `);
+
+        const porFornecedor = await pool.query(`
+            SELECT f.nome, COUNT(p.id) as total FROM fornecedores f
+            LEFT JOIN produtos p ON f.id = p.fornecedor_id AND p.ativo = true
+            WHERE f.ativo = true GROUP BY f.nome
+        `);
+
+        res.json({
+            kpis: stats.rows[0],
+            categorias: porCategoria.rows,
+            fornecedores: porFornecedor.rows
+        });
+    } catch (error) {
+        res.status(500).json({ error: 'Erro ao gerar indicadores' });
+    }
+});
+
 
 const PORT = 3333
 
